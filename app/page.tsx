@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import DashboardClient from "@/components/DashboardClient";
+import DashboardClient from "@/components/dashboard-client";
 
 export const metadata: Metadata = {
   title: "Solana Token App - Dashboard",
