@@ -12,7 +12,7 @@ import {
   getAccount,
 } from "@solana/spl-token"
 import { Loader2 } from 'lucide-react'
-import { DynamicNavbar } from "@/components/dynamic-navbar"
+import { DynamicNavbar } from "@/components/navbar"
 import { WalletStatus } from "@/components/wallet-status"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

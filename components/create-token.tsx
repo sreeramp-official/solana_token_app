@@ -5,7 +5,7 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react"
 import { PublicKey, Transaction, Keypair } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { Loader2 } from 'lucide-react'
-import { DynamicNavbar } from "@/components/dynamic-navbar"
+import { DynamicNavbar } from "@/components/navbar"
 import { WalletStatus } from "@/components/wallet-status"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

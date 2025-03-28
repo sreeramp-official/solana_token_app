@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useWallet, useConnection } from "@solana/wallet-adapter-react"
 import { Loader2, ExternalLink, CheckCircle, XCircle } from 'lucide-react'
-import { DynamicNavbar } from "@/components/dynamic-navbar"
+import { DynamicNavbar } from "@/components/navbar"
 import { WalletStatus } from "@/components/wallet-status"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
