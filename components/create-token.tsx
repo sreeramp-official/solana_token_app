@@ -147,7 +147,7 @@ export function CreateToken() {
   return (
     <div className="min-h-screen flex flex-col">
       <DynamicNavbar />
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto px-4 py-8 mt-10">
         <h1 className="text-3xl font-bold mb-6 mt-10">Create New Token</h1>
 
         <WalletStatus />
