@@ -17,10 +17,7 @@ export function DynamicNavbar() {
     }, []);
 
     return (
-        <nav
-            className={`w-full fixed top-0 left-0 z-10 transition-all ${isScrolled ? "bg-white shadow-md" : "bg-transparent"
-                }`}
-        >
+        <nav className="w-full fixed top-0 left-0 z-10 transition-all bg-transparent">
             <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
                 <Link href="/">
                     <span className="text-xl font-bold cursor-pointer">
