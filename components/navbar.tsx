@@ -18,7 +18,7 @@ export function DynamicNavbar() {
 
     return (
         <nav
-            className="w-full fixed top-0 left-0 z-10 transition-all"
+            className="w-full fixed top-0 left-0 z-10 transition-all border"
             style={{ background: "hsl(222.2, 84%, 4.9%)" }}
         >
             <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
