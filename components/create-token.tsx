@@ -1,17 +1,9 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useWallet, useConnection } from "@solana/wallet-adapter-react"
-import { Keypair, Transaction } from "@solana/web3.js"
-import {
-  getMinimumBalanceForRentExemptMint,
-  createMint,
-  getAssociatedTokenAddress,
-  createAssociatedTokenAccountInstruction,
-  createMintToInstruction,
-} from "@solana/spl-token"
+import { PublicKey, Transaction, Keypair } from "@solana/web3.js"
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { Loader2 } from 'lucide-react'
 import { DynamicNavbar } from "@/components/dynamic-navbar"
 import { WalletStatus } from "@/components/wallet-status"
@@ -20,6 +12,25 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
+import {
+  getMinimumBalanceForRentExemptMint,
+  createMint,
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
+  createMintToInstruction,
+} from "@solana/spl-token"
+
+import { SystemProgram } from "@solana/web3.js";
+import { createInitializeMintInstruction } from "@solana/spl-token";
+
+interface TokenAccount {
+  pubkey: PublicKey
+  account: {
+    mint: PublicKey
+    owner: PublicKey
+    amount: bigint
+  }
+}
 
 export function CreateToken() {
   const { connection } = useConnection()
@@ -33,83 +44,111 @@ export function CreateToken() {
   const { toast } = useToast()
 
   const handleCreateToken = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!publicKey || !signTransaction) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet to create a token.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
 
-      // Create a new mint keypair
-      const mintKeypair = Keypair.generate()
-      const mintAddress = mintKeypair.publicKey
+      // Generate a new mint keypair
+      const mintKeypair = Keypair.generate();
+      const mintPublicKey = mintKeypair.publicKey;
 
-      // Calculate the lamports required for rent exemption
-      const lamports = await getMinimumBalanceForRentExemptMint(connection)
+      // Calculate the lamports required for rent exemption for a mint account
+      const lamports = await getMinimumBalanceForRentExemptMint(connection);
 
-      // Create the token with the specified parameters
-      const mint = await createMint(
-        connection,
-        {
-          publicKey,
-          signTransaction,
-          sendTransaction,
-        },
+      // Create the mint account instruction
+      const createAccountIx = SystemProgram.createAccount({
+        fromPubkey: publicKey,
+        newAccountPubkey: mintPublicKey,
+        lamports,
+        space: 82, // Mint account size for SPL tokens
+        programId: TOKEN_PROGRAM_ID,
+      });
+
+      // Initialize the mint account instruction
+      const initMintIx = createInitializeMintInstruction(
+        mintPublicKey,
+        Number.parseInt(decimals),
         publicKey, // mint authority
-        publicKey, // freeze authority (you can use `null` to disable)
-        Number.parseInt(decimals), // decimals
-        mintKeypair
-      )
+        publicKey  // freeze authority (or null to disable)
+      );
 
-      // Get the associated token account address for the mint and the connected wallet
-      const associatedTokenAddress = await getAssociatedTokenAddress(mint, publicKey)
+      // Get the associated token account for the connected wallet and new mint
+      const associatedTokenAddress = await getAssociatedTokenAddress(mintPublicKey, publicKey);
 
-      // Create the associated token account if it doesn't exist
-      const transaction = new Transaction().add(
-        createAssociatedTokenAccountInstruction(publicKey, associatedTokenAddress, publicKey, mint)
-      )
+      // Create the associated token account instruction
+      const createATAIx = createAssociatedTokenAccountInstruction(
+        publicKey,
+        associatedTokenAddress,
+        publicKey,
+        mintPublicKey
+      );
 
-      // Add instruction to mint tokens to the associated token account
+      const instructions = [createAccountIx, initMintIx, createATAIx];
+
+      // If an initial supply is specified, add a mintTo instruction
       if (Number.parseInt(initialSupply) > 0) {
-        const mintAmount = BigInt(Number.parseInt(initialSupply)) * BigInt(10) ** BigInt(Number.parseInt(decimals))
-        transaction.add(createMintToInstruction(mint, associatedTokenAddress, publicKey, Number(mintAmount)))
+        const mintAmount =
+          BigInt(Number.parseInt(initialSupply)) *
+          (10n ** BigInt(Number.parseInt(decimals)));
+        const mintToIx = createMintToInstruction(
+          mintPublicKey,
+          associatedTokenAddress,
+          publicKey,
+          Number(mintAmount)
+        );
+        instructions.push(mintToIx);
       }
 
-      // Send the transaction
-      const signature = await sendTransaction(transaction, connection)
-      await connection.confirmTransaction(signature, "confirmed")
+      // Build the transaction
+      const transaction = new Transaction().add(...instructions);
+      transaction.feePayer = publicKey;
+      const { blockhash } = await connection.getRecentBlockhash();
+      transaction.recentBlockhash = blockhash;
 
-      // Set the mint address to display to the user
-      setMintAddress(mint.toString())
+      // Partially sign the transaction with the mint keypair (required for creating the mint account)
+      transaction.partialSign(mintKeypair);
+
+      // Have the wallet sign the transaction
+      const signedTx = await signTransaction(transaction);
+
+      // Send the signed transaction
+      const signature = await connection.sendRawTransaction(signedTx.serialize());
+      await connection.confirmTransaction(signature, "confirmed");
+
+      const mintStr = mintPublicKey.toString();
+      setMintAddress(mintStr);
 
       toast({
         title: "Token created successfully!",
-        description: `Your new token has been created with mint address: ${mint.toString().slice(0, 10)}...`,
-      })
+        description: `Your new token has been created with mint address: ${mintStr.slice(0, 10)}...`,
+      });
     } catch (error) {
-      console.error("Error creating token:", error)
+      console.error("Error creating token:", error);
       toast({
         title: "Error creating token",
-        description: `${error instanceof Error ? error.message : "Unknown error occurred"}`,
+        description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <DynamicNavbar />
       <main className="flex-1 container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Create New Token</h1>
+        <h1 className="text-3xl font-bold mb-6 mt-10">Create New Token</h1>
 
         <WalletStatus />
 
@@ -237,4 +276,3 @@ export function CreateToken() {
 }
 
 export default CreateToken
-
