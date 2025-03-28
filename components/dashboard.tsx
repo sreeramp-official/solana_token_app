@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useWallet, useConnection } from "@solana/wallet-adapter-react"
 import { PublicKey } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { Loader2 } from 'lucide-react'
+import { Loader2 } from "lucide-react"
 import { DynamicNavbar } from "@/components/dynamic-navbar"
 import { TokenBalance } from "@/components/token-balance"
 import { WalletStatus } from "@/components/wallet-status"
@@ -38,7 +38,6 @@ export function Dashboard() {
 
       try {
         setLoading(true)
-
         // Fetch SOL balance
         const balance = await connection.getBalance(publicKey)
         setSolBalance(balance / 10 ** 9) // Convert lamports to SOL
@@ -73,9 +72,8 @@ export function Dashboard() {
 
     fetchTokenAccounts()
 
-    // Set up an interval to refresh data every 30 seconds
+    // Refresh data every 30 seconds
     const intervalId = setInterval(fetchTokenAccounts, 30000)
-
     return () => clearInterval(intervalId)
   }, [publicKey, connected, connection, toast])
 
@@ -83,21 +81,21 @@ export function Dashboard() {
     <>
       <DynamicNavbar />
       <div className="min-h-screen flex flex-col mt-16">
-        <main className="flex-1 container mx-auto px-4 py-8">
-
+        <main className="container mx-auto px-4 py-8">
           <WalletStatus />
 
           {connected && publicKey ? (
-            <>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Left Column: SOL Balance */}
+              <div className="flex-1">
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle>SOL Balance</CardTitle>
                     <CardDescription>Your native SOL balance</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="h-80 flex items-center justify-center">
                     {solBalance !== null ? (
-                      <p className="text-2xl font-bold">{solBalance.toFixed(6)} SOL</p>
+                      <p className="font-bold text-3xl">{solBalance.toFixed(6)} SOL</p>
                     ) : (
                       <div className="flex items-center">
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -108,33 +106,43 @@ export function Dashboard() {
                 </Card>
               </div>
 
-              <h2 className="text-2xl font-bold mb-4">Your Tokens</h2>
-
-              {loading ? (
-                <div className="flex justify-center items-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin mr-2" />
-                  <span>Loading token accounts...</span>
-                </div>
-              ) : tokenAccounts.length > 0 ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {tokenAccounts.map((account) => (
-                    <TokenBalance key={account.pubkey.toString()} tokenAccount={account} />
-                  ))}
-                </div>
-              ) : (
+              {/* Right Column: Tokens */}
+              <div className="flex-1">
                 <Card>
-                  <CardContent className="py-6">
-                    <p className="text-center text-muted-foreground">
-                      No token accounts found. Create or receive tokens to see them here.
-                    </p>
+                  <CardHeader className="pb-2">
+                    <CardTitle>Your Tokens</CardTitle>
+                    <CardDescription>Manage your SPL tokens</CardDescription>
+                  </CardHeader>
+                  {/* Fixed height with vertical scrolling */}
+                  <CardContent className="h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
+                    {loading ? (
+                      <div className="flex flex-col items-center justify-center h-full">
+                        <Loader2 className="h-8 w-8 animate-spin mr-2" />
+                        <span>Loading token accounts...</span>
+                      </div>
+                    ) : tokenAccounts.length > 0 ? (
+                      <div className="space-y-4">
+                        {tokenAccounts.map((account) => (
+                          <TokenBalance key={account.pubkey.toString()} tokenAccount={account} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-center text-muted-foreground">
+                          No token accounts found. Create or receive tokens to see them here.
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-              )}
-            </>
+              </div>
+            </div>
           ) : (
             <Card>
               <CardContent className="py-6">
-                <p className="text-center text-muted-foreground">Connect your wallet to view your dashboard.</p>
+                <p className="text-center text-muted-foreground">
+                  Connect your wallet to view your dashboard.
+                </p>
               </CardContent>
             </Card>
           )}
@@ -145,4 +153,3 @@ export function Dashboard() {
 }
 
 export default Dashboard
-
