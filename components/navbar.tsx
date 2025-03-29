@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import NavLink from "@/components/ui/navlink";
+import NavLink from "@/components/navlink";
 
 export function DynamicNavbar() {
     const [isScrolled, setIsScrolled] = useState(false);
