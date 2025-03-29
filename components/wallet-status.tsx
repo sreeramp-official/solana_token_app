@@ -37,8 +37,11 @@ export function WalletStatus() {
       <Alert className="mb-6">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Wallet not connected</AlertTitle>
-        <AlertDescription className="flex flex-col md:flex-row items-center gap-4">
+        <AlertDescription className="flex flex-col items-center gap-2">
           <span>Connect your Solana wallet to use this application.</span>
+          <span className="text-xs text-gray-300">
+            Note: This app uses the Solana Devnet. Make sure your wallet is configured for Devnet.
+          </span>
           <div className="w-full md:w-auto">
             <WalletMultiButton />
           </div>
