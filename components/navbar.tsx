@@ -28,7 +28,7 @@ export function DynamicNavbar() {
                 {/* Left: App Title */}
                 <div className="flex-1">
                     <Link href="/">
-                        <span className="text-xl font-bold cursor-pointer">
+                        <span className="text-xl font-bold text-white cursor-pointer">
                             Solana Token App
                         </span>
                     </Link>
@@ -41,16 +41,17 @@ export function DynamicNavbar() {
                     <NavLink href="/send">Send</NavLink>
                     <NavLink href="/history">History</NavLink>
                 </div>
-                {/* Right: Desktop Wallet Button and Theme Toggle */}
+                {/* Right: Desktop Wallet Button and Mode Toggle */}
                 <div className="hidden md:flex flex-1 justify-end items-center gap-4">
-                    <WalletMultiButton className="!bg-indigo-600 hover:!bg-indigo-700" />
                     <ModeToggle />
+                    <WalletMultiButton className="!bg-indigo-600 hover:!bg-indigo-700" />
                 </div>
-                {/* Mobile: Hamburger Menu */}
-                <div className="md:hidden">
+                {/* Mobile: Mode Toggle & Hamburger Menu */}
+                <div className="md:hidden flex items-center gap-2">
+                    <ModeToggle />
                     <button
                         onClick={() => setMenuOpen(!menuOpen)}
-                        className="focus:outline-none"
+                        className="text-white focus:outline-none"
                     >
                         {menuOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
@@ -80,8 +81,8 @@ export function DynamicNavbar() {
                             History
                         </NavLink>
                         <div className="flex flex-col gap-2">
-                            <WalletMultiButton className="!bg-indigo-600 hover:!bg-indigo-700" />
                             <ModeToggle />
+                            <WalletMultiButton className="!bg-indigo-600 hover:!bg-indigo-700" />
                         </div>
                     </div>
                 </div>
