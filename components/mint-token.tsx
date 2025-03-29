@@ -1,38 +1,43 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import { useWallet, useConnection } from "@solana/wallet-adapter-react"
-import { PublicKey, Transaction } from "@solana/web3.js"
+import { useState } from "react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import {
   createMintToInstruction,
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
   getMint,
   getAccount,
-} from "@solana/spl-token"
-import { Loader2 } from 'lucide-react'
-import { DynamicNavbar } from "@/components/navbar"
-import { WalletStatus } from "@/components/wallet-status"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+} from "@solana/spl-token";
+import { Loader2 } from "lucide-react";
+import { DynamicNavbar } from "@/components/navbar";
+import { WalletStatus } from "@/components/wallet-status";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
+import TokenSelector from "@/components/token-selector";
 
 export function MintToken() {
-  const { connection } = useConnection()
-  const { publicKey, sendTransaction } = useWallet()
-  const [mintAddress, setMintAddress] = useState("")
-  const [amount, setAmount] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [verifying, setVerifying] = useState(false)
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction } = useWallet();
+  const [selectedMint, setSelectedMint] = useState<string>("");
+  const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [mintInfo, setMintInfo] = useState<{
-    decimals: number
-    mintAuthority: string | null
-  } | null>(null)
-  const { toast } = useToast()
+    decimals: number;
+    mintAuthority: string | null;
+  } | null>(null);
+  const { toast } = useToast();
+
+  // Reset mintInfo whenever a new token is selected
+  const handleTokenSelect = (mint: string) => {
+    setSelectedMint(mint);
+    setMintInfo(null); // Reset verified mint info so that verify button is active again.
+  };
 
   const handleVerifyMint = async () => {
     if (!publicKey) {
@@ -40,130 +45,132 @@ export function MintToken() {
         title: "Wallet not connected",
         description: "Please connect your wallet to mint tokens.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    if (!mintAddress) {
+    if (!selectedMint) {
       toast({
-        title: "Missing mint address",
-        description: "Please enter a valid mint address.",
+        title: "Missing token",
+        description: "Please select a token from the dropdown.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
-      setVerifying(true)
+      setVerifying(true);
 
-      // Validate the mint address
-      let mintPublicKey: PublicKey
+      let mintPublicKey: PublicKey;
       try {
-        mintPublicKey = new PublicKey(mintAddress)
+        mintPublicKey = new PublicKey(selectedMint);
       } catch (error) {
         toast({
           title: "Invalid mint address",
-          description: "The provided address is not a valid Solana address.",
+          description: "The selected address is not a valid Solana address.",
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
-      // Get the mint info
-      const mintInfo = await getMint(connection, mintPublicKey)
+      // Get the mint info from the chain
+      const mintData = await getMint(connection, mintPublicKey);
 
       // Check if the connected wallet is the mint authority
-      if (!mintInfo.mintAuthority || !mintInfo.mintAuthority.equals(publicKey)) {
+      if (!mintData.mintAuthority || !mintData.mintAuthority.equals(publicKey)) {
         toast({
           title: "Not authorized",
           description: "Your wallet is not the mint authority for this token.",
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
       setMintInfo({
-        decimals: mintInfo.decimals,
-        mintAuthority: mintInfo.mintAuthority?.toString() || null,
-      })
+        decimals: mintData.decimals,
+        mintAuthority: mintData.mintAuthority?.toString() || null,
+      });
 
       toast({
-        title: "Mint verified",
+        title: "Token verified",
         description: "You are authorized to mint this token.",
-      })
+      });
     } catch (error) {
-      console.error("Error verifying mint:", error)
+      console.error("Error verifying mint:", error);
       toast({
-        title: "Error verifying mint",
-        description: `${error instanceof Error ? error.message : "Unknown error occurred"}`,
+        title: "Error verifying token",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
-      })
-      setMintInfo(null)
+      });
+      setMintInfo(null);
     } finally {
-      setVerifying(false)
+      setVerifying(false);
     }
-  }
+  };
 
   const handleMintToken = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!publicKey || !mintInfo) {
       toast({
         title: "Cannot mint tokens",
-        description: "Please verify the mint address first.",
+        description: "Please verify the token selection first.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
 
-      const mintPublicKey = new PublicKey(mintAddress)
+      const mintPublicKey = new PublicKey(selectedMint);
 
-      // Calculate the amount to mint based on decimals
-      const mintAmount = BigInt(Number.parseFloat(amount) * 10 ** mintInfo.decimals)
+      // Calculate mint amount based on decimals
+      const mintAmount =
+        BigInt(Number.parseFloat(amount) * 10 ** mintInfo.decimals);
 
-      // Get the associated token account for the recipient (in this case, the connected wallet)
-      const associatedTokenAddress = await getAssociatedTokenAddress(mintPublicKey, publicKey)
+      // Get associated token account for the connected wallet
+      const associatedTokenAddress = await getAssociatedTokenAddress(mintPublicKey, publicKey);
 
-      // Check if the associated token account exists
-      const transaction = new Transaction()
+      const transaction = new Transaction();
 
       try {
-        await getAccount(connection, associatedTokenAddress)
+        // Check if the associated token account exists
+        await getAccount(connection, associatedTokenAddress);
       } catch (error) {
-        // If the account doesn't exist, create it
+        // If not, add instruction to create it
         transaction.add(
           createAssociatedTokenAccountInstruction(publicKey, associatedTokenAddress, publicKey, mintPublicKey)
-        )
+        );
       }
 
-      // Add instruction to mint tokens
-      transaction.add(createMintToInstruction(mintPublicKey, associatedTokenAddress, publicKey, Number(mintAmount)))
+      // Add mint instruction
+      transaction.add(
+        createMintToInstruction(mintPublicKey, associatedTokenAddress, publicKey, Number(mintAmount))
+      );
 
-      // Send the transaction
-      const signature = await sendTransaction(transaction, connection)
-      await connection.confirmTransaction(signature, "confirmed")
+      // Sign and send transaction
+      const signature = await sendTransaction(transaction, connection);
+      await connection.confirmTransaction(signature, "confirmed");
 
       toast({
         title: "Tokens minted successfully!",
         description: `${amount} tokens have been minted to your wallet.`,
-      })
+      });
 
-      // Reset the form
-      setAmount("")
+      // Reset the amount field
+      setAmount("");
     } catch (error) {
-      console.error("Error minting tokens:", error)
+      console.error("Error minting tokens:", error);
       toast({
         title: "Error minting tokens",
-        description: `${error instanceof Error ? error.message : "Unknown error occurred"}`,
+        description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -177,34 +184,15 @@ export function MintToken() {
           <Card>
             <CardHeader>
               <CardTitle>Mint Additional Tokens</CardTitle>
-              <CardDescription>Mint additional tokens to an existing SPL token mint</CardDescription>
+              <CardDescription>
+                Mint additional tokens to an existing SPL token mint
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Token Selection */}
               <div className="space-y-2">
-                <Label htmlFor="mintAddress">Token Mint Address</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="mintAddress"
-                    placeholder="Enter the token mint address"
-                    value={mintAddress}
-                    onChange={(e) => setMintAddress(e.target.value)}
-                    disabled={verifying || !!mintInfo}
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleVerifyMint}
-                    disabled={verifying || !mintAddress || !publicKey || !!mintInfo}
-                  >
-                    {verifying ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      "Verify"
-                    )}
-                  </Button>
-                </div>
+                <Label htmlFor="tokenSelect">Select Token</Label>
+                <TokenSelector onTokenSelect={handleTokenSelect} />
               </div>
 
               {mintInfo && (
@@ -218,6 +206,25 @@ export function MintToken() {
                 </div>
               )}
 
+              {/* Verify Button */}
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  onClick={handleVerifyMint}
+                  disabled={verifying || !selectedMint || !publicKey || !!mintInfo}
+                >
+                  {verifying ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify Token"
+                  )}
+                </Button>
+              </div>
+
+              {/* Mint Form */}
               <form onSubmit={handleMintToken}>
                 <div className="space-y-2">
                   <Label htmlFor="amount">Amount to Mint</Label>
@@ -243,7 +250,13 @@ export function MintToken() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={loading || !mintInfo || !amount || Number.parseFloat(amount) <= 0 || !publicKey}
+                    disabled={
+                      loading ||
+                      !mintInfo ||
+                      !amount ||
+                      Number.parseFloat(amount) <= 0 ||
+                      !publicKey
+                    }
                   >
                     {loading ? (
                       <>
@@ -261,8 +274,7 @@ export function MintToken() {
         </div>
       </main>
     </div>
-  )
+  );
 }
 
-export default MintToken
-
+export default MintToken;
