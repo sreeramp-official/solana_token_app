@@ -28,7 +28,7 @@ export function DynamicNavbar() {
                 {/* Left: App Title */}
                 <div className="flex-1">
                     <Link href="/">
-                        <span className="text-xl font-bold text-white cursor-pointer">
+                        <span className="text-xl font-bold cursor-pointer">
                             Solana Token App
                         </span>
                     </Link>
