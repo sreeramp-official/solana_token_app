@@ -21,7 +21,8 @@ export function DynamicNavbar() {
 
     return (
         <nav
-            className={`w-full fixed top-0 left-0 z-10 transition-all border-b ${isScrolled ? "shadow-md" : ""}`}
+            className={`w-full fixed top-0 left-0 z-10 transition-all border-b ${isScrolled ? "shadow-md" : ""
+                }`}
             style={{ background: "hsl(222.2, 84%, 4.9%)" }}
         >
             <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -35,9 +36,10 @@ export function DynamicNavbar() {
                 </div>
                 {/* Center: Desktop Navigation */}
                 <div className="hidden md:flex flex-1 justify-center gap-6">
-                    <NavLink href="/create">Create Token</NavLink>
-                    <NavLink href="/mint">Mint Token</NavLink>
-                    <NavLink href="/send">Send Token</NavLink>
+                    <NavLink href="/create">Create</NavLink>
+                    <NavLink href="/mint">Mint</NavLink>
+                    <NavLink href="/send">Send</NavLink>
+                    <NavLink href="/history">History</NavLink>
                 </div>
                 {/* Right: Desktop Wallet Button */}
                 <div className="hidden md:flex flex-1 justify-end">
@@ -61,17 +63,18 @@ export function DynamicNavbar() {
                 >
                     <div className="flex flex-col space-y-4">
                         <NavLink href="/create" onClick={() => setMenuOpen(false)}>
-                            Create Token
+                            Create
                         </NavLink>
                         <NavLink href="/mint" onClick={() => setMenuOpen(false)}>
-                            Mint Token
+                            Mint
                         </NavLink>
                         <NavLink href="/send" onClick={() => setMenuOpen(false)}>
-                            Send Token
+                            Send
                         </NavLink>
-                        <WalletMultiButton
-                            className="!bg-indigo-600 hover:!bg-indigo-700"
-                        />
+                        <NavLink href="/history" onClick={() => setMenuOpen(false)}>
+                            History
+                        </NavLink>
+                        <WalletMultiButton className="!bg-indigo-600 hover:!bg-indigo-700" />
                     </div>
                 </div>
             )}
