@@ -80,7 +80,7 @@ export function Dashboard() {
   return (
     <>
       <DynamicNavbar />
-      <div className="min-h-screen flex flex-col mt-16">
+      <div className="flex flex-col mt-16">
         <main className="container mx-auto px-4 py-8">
           <WalletStatus />
 
