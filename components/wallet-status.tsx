@@ -1,21 +1,23 @@
-"use client"
+"use client";
 
-import { useWallet } from "@solana/wallet-adapter-react"
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
-import { AlertCircle, CheckCircle2 } from 'lucide-react'
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function WalletStatus() {
-  const { publicKey, connected, connecting, disconnecting } = useWallet()
+  const { publicKey, connected, connecting, disconnecting } = useWallet();
 
   if (connecting) {
     return (
       <Alert className="mb-6">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Connecting wallet</AlertTitle>
-        <AlertDescription>Please approve the connection request in your wallet.</AlertDescription>
+        <AlertDescription>
+          Please approve the connection request in your wallet.
+        </AlertDescription>
       </Alert>
-    )
+    );
   }
 
   if (disconnecting) {
@@ -23,9 +25,11 @@ export function WalletStatus() {
       <Alert className="mb-6">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Disconnecting wallet</AlertTitle>
-        <AlertDescription>Your wallet is being disconnected.</AlertDescription>
+        <AlertDescription>
+          Your wallet is being disconnected.
+        </AlertDescription>
       </Alert>
-    )
+    );
   }
 
   if (!connected || !publicKey) {
@@ -33,12 +37,14 @@ export function WalletStatus() {
       <Alert className="mb-6">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Wallet not connected</AlertTitle>
-        <AlertDescription className="flex items-center gap-4">
+        <AlertDescription className="flex flex-col md:flex-row items-center gap-4">
           <span>Connect your Solana wallet to use this application.</span>
-          <WalletMultiButton />
+          <div className="w-full md:w-auto">
+            <WalletMultiButton />
+          </div>
         </AlertDescription>
       </Alert>
-    )
+    );
   }
 
   return (
@@ -50,6 +56,7 @@ export function WalletStatus() {
         {publicKey.toString().slice(-6)}
       </AlertDescription>
     </Alert>
-  )
+  );
 }
 
+export default WalletStatus;
