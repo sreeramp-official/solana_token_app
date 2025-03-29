@@ -64,7 +64,7 @@ export function TokenSelector({ onTokenSelect }: TokenSelectorProps) {
         <select
             value={selected}
             onChange={handleChange}
-            className="bg-background text-white border border-input rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-colors m-2"
+            className="w-full md:w-auto bg-background text-white border border-input rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-colors m-2"
         >
             {tokenAccounts.length > 0 ? (
                 tokenAccounts.map((account) => (
