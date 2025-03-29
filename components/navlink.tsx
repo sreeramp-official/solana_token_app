@@ -1,20 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import type { AnchorHTMLAttributes } from "react";
 import { usePathname } from "next/navigation";
 
-interface NavLinkProps {
+interface NavLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
     href: string;
     children: React.ReactNode;
 }
 
-export function NavLink({ href, children }: NavLinkProps) {
+export function NavLink({ href, children, ...props }: NavLinkProps) {
     const pathname = usePathname();
     const isActive = pathname === href;
 
     return (
-        <Link href={href} className="group relative">
-            <span className="text-lg font-medium text-white transition-colors">
+        <Link href={href} {...props} className={`group relative ${props.className || ""}`}>
+            <span className="text-lg font-medium text-white hover:text-gray-300 transition-colors">
                 {children}
             </span>
             <span
