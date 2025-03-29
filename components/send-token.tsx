@@ -1,38 +1,42 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import { useWallet, useConnection } from "@solana/wallet-adapter-react"
-import { PublicKey, Transaction } from "@solana/web3.js"
+import { useState } from "react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import {
   createTransferInstruction,
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
   getAccount,
-} from "@solana/spl-token"
-import { Loader2 } from 'lucide-react'
-import { DynamicNavbar } from "@/components/navbar"
-import { WalletStatus } from "@/components/wallet-status"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+} from "@solana/spl-token";
+import { Loader2 } from "lucide-react";
+import { DynamicNavbar } from "@/components/navbar";
+import { WalletStatus } from "@/components/wallet-status";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
+import TokenSelector from "@/components/token-selector";
 
 export function SendToken() {
-  const { connection } = useConnection()
-  const { publicKey, sendTransaction } = useWallet()
-  const [tokenMint, setTokenMint] = useState("")
-  const [recipientAddress, setRecipientAddress] = useState("")
-  const [amount, setAmount] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [verifying, setVerifying] = useState(false)
-  const [tokenInfo, setTokenInfo] = useState<{
-    decimals: number
-    balance: string
-  } | null>(null)
-  const { toast } = useToast()
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction } = useWallet();
+  const [tokenMint, setTokenMint] = useState("");
+  const [recipientAddress, setRecipientAddress] = useState("");
+  const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [tokenInfo, setTokenInfo] = useState<{ decimals: number; balance: string } | null>(null);
+  const [successMessage, setSuccessMessage] = useState("");
+  const { toast } = useToast();
+
+  // Reset verified token info when a new token is selected
+  const handleTokenSelect = (mint: string) => {
+    setTokenMint(mint);
+    setTokenInfo(null);
+    setSuccessMessage("");
+  };
 
   const handleVerifyToken = async () => {
     if (!publicKey) {
@@ -40,190 +44,184 @@ export function SendToken() {
         title: "Wallet not connected",
         description: "Please connect your wallet to send tokens.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
-
     if (!tokenMint) {
       toast({
         title: "Missing token mint",
-        description: "Please enter a valid token mint address.",
+        description: "Please select a token from the dropdown.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
-
     try {
-      setVerifying(true)
+      setVerifying(true);
 
-      // Validate the mint address
-      let mintPublicKey: PublicKey
+      let mintPublicKey: PublicKey;
       try {
-        mintPublicKey = new PublicKey(tokenMint)
+        mintPublicKey = new PublicKey(tokenMint);
       } catch (error) {
         toast({
           title: "Invalid token mint",
-          description: "The provided address is not a valid Solana address.",
+          description: "The selected address is not a valid Solana address.",
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
       // Get the associated token account for the sender
-      const associatedTokenAddress = await getAssociatedTokenAddress(mintPublicKey, publicKey)
+      const associatedTokenAddress = await getAssociatedTokenAddress(mintPublicKey, publicKey);
 
       try {
         // Get the token account info
-        const tokenAccount = await getAccount(connection, associatedTokenAddress)
+        const tokenAccount = await getAccount(connection, associatedTokenAddress);
+        // For proper decimals, you might fetch mint info. Here we use a fallback.
+        const decimals = 0;
+        const balance = (Number(tokenAccount.amount) / 10 ** decimals).toString();
 
-        // Get the token's decimals
-        const accountInfo = await connection.getParsedAccountInfo(mintPublicKey)
-        const parsedData = accountInfo.value?.data as any
-        const decimals = parsedData?.parsed?.info?.decimals || 0
-
-        // Calculate the balance
-        const balance = (Number(tokenAccount.amount) / 10 ** decimals).toString()
-
-        setTokenInfo({
-          decimals,
-          balance,
-        })
+        setTokenInfo({ decimals, balance });
 
         toast({
           title: "Token verified",
           description: `Your balance: ${balance} tokens`,
-        })
+        });
       } catch (error) {
         toast({
           title: "Token not found",
           description: "You don't have any tokens for this mint address.",
           variant: "destructive",
-        })
-        setTokenInfo(null)
+        });
+        setTokenInfo(null);
       }
     } catch (error) {
-      console.error("Error verifying token:", error)
+      console.error("Error verifying token:", error);
       toast({
         title: "Error verifying token",
-        description: `${error instanceof Error ? error.message : "Unknown error occurred"}`,
+        description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
-      })
-      setTokenInfo(null)
+      });
+      setTokenInfo(null);
     } finally {
-      setVerifying(false)
+      setVerifying(false);
     }
-  }
+  };
 
   const handleSendToken = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    if (!publicKey || !tokenInfo) {
+    // Re-check connection before sending
+    if (!publicKey) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet before sending tokens.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!tokenInfo) {
       toast({
         title: "Cannot send tokens",
-        description: "Please verify the token mint first.",
+        description: "Please verify the token selection first.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
 
       // Validate recipient address
-      let recipientPublicKey: PublicKey
+      let recipientPublicKey: PublicKey;
       try {
-        recipientPublicKey = new PublicKey(recipientAddress)
+        recipientPublicKey = new PublicKey(recipientAddress);
       } catch (error) {
         toast({
           title: "Invalid recipient address",
           description: "The provided recipient address is not valid.",
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
       // Validate amount
-      const amountValue = Number.parseFloat(amount)
+      const amountValue = Number.parseFloat(amount);
       if (isNaN(amountValue) || amountValue <= 0) {
         toast({
           title: "Invalid amount",
           description: "Please enter a valid amount greater than 0.",
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
-
-      if (amountValue > Number.parseFloat(tokenInfo.balance)) {
+      if (tokenInfo && amountValue > Number.parseFloat(tokenInfo.balance)) {
         toast({
           title: "Insufficient balance",
           description: `You only have ${tokenInfo.balance} tokens available.`,
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
-      const mintPublicKey = new PublicKey(tokenMint)
+      const mintPublicKey = new PublicKey(tokenMint);
+      // Calculate send amount based on decimals
+      const sendAmount = BigInt(amountValue * 10 ** tokenInfo.decimals);
 
-      // Calculate the amount to send based on decimals
-      const sendAmount = BigInt(amountValue * 10 ** tokenInfo.decimals)
+      // Get associated token accounts for sender and recipient
+      const senderTokenAccount = await getAssociatedTokenAddress(mintPublicKey, publicKey);
+      const recipientTokenAccount = await getAssociatedTokenAddress(mintPublicKey, recipientPublicKey);
 
-      // Get the associated token accounts for sender and recipient
-      const senderTokenAccount = await getAssociatedTokenAddress(mintPublicKey, publicKey)
+      // Create transaction
+      const transaction = new Transaction();
 
-      const recipientTokenAccount = await getAssociatedTokenAddress(mintPublicKey, recipientPublicKey)
-
-      // Create a new transaction
-      const transaction = new Transaction()
-
-      // Check if the recipient's token account exists
+      // If recipient's token account doesn't exist, create it
       try {
-        await getAccount(connection, recipientTokenAccount)
+        await getAccount(connection, recipientTokenAccount);
       } catch (error) {
-        // If the account doesn't exist, create it
         transaction.add(
           createAssociatedTokenAccountInstruction(publicKey, recipientTokenAccount, recipientPublicKey, mintPublicKey)
-        )
+        );
       }
 
-      // Add the transfer instruction
+      // Add transfer instruction
       transaction.add(
         createTransferInstruction(senderTokenAccount, recipientTokenAccount, publicKey, Number(sendAmount))
-      )
+      );
 
-      // Send the transaction
-      const signature = await sendTransaction(transaction, connection)
-      await connection.confirmTransaction(signature, "confirmed")
+      // Send transaction
+      const signature = await sendTransaction(transaction, connection);
+      await connection.confirmTransaction(signature, "confirmed");
 
+      const message = `${amount} tokens have been sent to ${recipientAddress.slice(0, 6)}...${recipientAddress.slice(-4)}`;
       toast({
         title: "Tokens sent successfully!",
-        description: `${amount} tokens have been sent to ${recipientAddress.slice(0, 6)}...${recipientAddress.slice(-4)}`,
-      })
+        description: message,
+      });
+      setSuccessMessage(message);
 
-      // Reset the form
-      setAmount("")
-      setRecipientAddress("")
-      setTokenInfo(null)
-      setTokenMint("")
+      // Reset form
+      setAmount("");
+      setRecipientAddress("");
+      setTokenInfo(null);
+      setTokenMint("");
     } catch (error) {
-      console.error("Error sending tokens:", error)
+      console.error("Error sending tokens:", error);
       toast({
         title: "Error sending tokens",
-        description: `${error instanceof Error ? error.message : "Unknown error occurred"}`,
+        description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <DynamicNavbar />
       <main className="flex-1 container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">Send Tokens</h1>
-
         <WalletStatus />
-
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader>
@@ -231,41 +229,36 @@ export function SendToken() {
               <CardDescription>Send SPL tokens to another Solana address</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Token Selection */}
               <div className="space-y-2">
-                <Label htmlFor="tokenMint">Token Mint Address</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="tokenMint"
-                    placeholder="Enter the token mint address"
-                    value={tokenMint}
-                    onChange={(e) => setTokenMint(e.target.value)}
-                    disabled={verifying || !!tokenInfo}
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleVerifyToken}
-                    disabled={verifying || !tokenMint || !publicKey || !!tokenInfo}
-                  >
-                    {verifying ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      "Verify"
-                    )}
-                  </Button>
-                </div>
+                <Label htmlFor="tokenSelect">Select Token</Label>
+                <TokenSelector onTokenSelect={handleTokenSelect} />
               </div>
-
               {tokenInfo && (
                 <div className="p-4 bg-muted rounded-md">
                   <p className="text-sm">
-                    <span className="font-semibold">Your Balance:</span> {tokenInfo.balance}
+                    <span className="font-semibold">Available Balance:</span> {tokenInfo.balance}
                   </p>
                 </div>
               )}
-
+              {/* Verify Button */}
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  onClick={handleVerifyToken}
+                  disabled={verifying || !tokenMint || !publicKey || !!tokenInfo}
+                >
+                  {verifying ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify Token"
+                  )}
+                </Button>
+              </div>
+              {/* Send Form */}
               <form onSubmit={handleSendToken}>
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -279,7 +272,6 @@ export function SendToken() {
                       required
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="amount">Amount to Send</Label>
                     <Input
@@ -297,7 +289,6 @@ export function SendToken() {
                       <p className="text-sm text-muted-foreground">Available balance: {tokenInfo.balance}</p>
                     )}
                   </div>
-
                   <Button
                     type="submit"
                     className="w-full"
@@ -308,7 +299,7 @@ export function SendToken() {
                       Number.parseFloat(amount) <= 0 ||
                       !recipientAddress ||
                       !publicKey ||
-                      Number.parseFloat(amount) > Number.parseFloat(tokenInfo.balance)
+                      (tokenInfo && Number.parseFloat(amount) > Number.parseFloat(tokenInfo.balance))
                     }
                   >
                     {loading ? (
@@ -322,13 +313,17 @@ export function SendToken() {
                   </Button>
                 </div>
               </form>
+              {successMessage && (
+                <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">
+                  {successMessage}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </main>
     </div>
-  )
+  );
 }
 
-export default SendToken
-
+export default SendToken;
