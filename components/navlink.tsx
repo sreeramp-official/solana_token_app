@@ -15,7 +15,7 @@ export function NavLink({ href, children, ...props }: NavLinkProps) {
 
     return (
         <Link href={href} {...props} className={`group relative ${props.className || ""}`}>
-            <span className="font-medium text-base text-white hover:text-gray-300 transition-colors">
+            <span className="font-medium text-base">
                 {children}
             </span>
             <span
