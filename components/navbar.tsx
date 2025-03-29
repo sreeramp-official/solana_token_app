@@ -36,6 +36,7 @@ export function DynamicNavbar() {
                 </div>
                 {/* Center: Desktop Navigation */}
                 <div className="hidden md:flex flex-1 justify-center gap-6">
+                    <NavLink href="/">Home</NavLink>
                     <NavLink href="/create">Create</NavLink>
                     <NavLink href="/mint">Mint</NavLink>
                     <NavLink href="/send">Send</NavLink>
@@ -62,6 +63,9 @@ export function DynamicNavbar() {
                     className="md:hidden px-6 py-4"
                 >
                     <div className="flex flex-col space-y-4">
+                        <NavLink href="/" onClick={() => setMenuOpen(false)}>
+                            Home
+                        </NavLink>
                         <NavLink href="/create" onClick={() => setMenuOpen(false)}>
                             Create
                         </NavLink>
