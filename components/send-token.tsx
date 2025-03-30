@@ -29,6 +29,7 @@ export function SendToken() {
   const [verifying, setVerifying] = useState(false);
   const [tokenInfo, setTokenInfo] = useState<{ decimals: number; balance: string } | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
+  const [txSignature, setTxSignature] = useState("");
   const { toast } = useToast();
 
   // Reset verified token info when a new token is selected
@@ -36,6 +37,7 @@ export function SendToken() {
     setTokenMint(mint);
     setTokenInfo(null);
     setSuccessMessage("");
+    setTxSignature("");
   };
 
   const handleVerifyToken = async () => {
@@ -76,7 +78,7 @@ export function SendToken() {
       try {
         // Get the token account info
         const tokenAccount = await getAccount(connection, associatedTokenAddress);
-        // For proper decimals, you might fetch mint info. Here we use a fallback.
+        // For proper decimals, you might fetch mint info. Here we use a fallback value.
         const decimals = 0;
         const balance = (Number(tokenAccount.amount) / 10 ** decimals).toString();
 
@@ -110,7 +112,6 @@ export function SendToken() {
   const handleSendToken = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Re-check connection before sending
     if (!publicKey) {
       toast({
         title: "Wallet not connected",
@@ -171,7 +172,7 @@ export function SendToken() {
       const senderTokenAccount = await getAssociatedTokenAddress(mintPublicKey, publicKey);
       const recipientTokenAccount = await getAssociatedTokenAddress(mintPublicKey, recipientPublicKey);
 
-      // Create transaction
+      // Create a new transaction
       const transaction = new Transaction();
 
       // If recipient's token account doesn't exist, create it
@@ -183,12 +184,12 @@ export function SendToken() {
         );
       }
 
-      // Add transfer instruction
+      // Add the transfer instruction
       transaction.add(
         createTransferInstruction(senderTokenAccount, recipientTokenAccount, publicKey, Number(sendAmount))
       );
 
-      // Send transaction
+      // Send the transaction
       const signature = await sendTransaction(transaction, connection);
       await connection.confirmTransaction(signature, "confirmed");
 
@@ -198,6 +199,7 @@ export function SendToken() {
         description: message,
       });
       setSuccessMessage(message);
+      setTxSignature(signature);
 
       // Reset form
       setAmount("");
@@ -215,6 +217,11 @@ export function SendToken() {
       setLoading(false);
     }
   };
+
+  // Construct explorer URL for the transaction signature
+  const explorerUrl = txSignature
+    ? `https://explorer.solana.com/tx/${txSignature}?cluster=devnet`
+    : "";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -286,7 +293,9 @@ export function SendToken() {
                       step="any"
                     />
                     {tokenInfo && (
-                      <p className="text-sm text-muted-foreground">Available balance: {tokenInfo.balance}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Available balance: {tokenInfo.balance}
+                      </p>
                     )}
                   </div>
                   <Button
@@ -315,7 +324,17 @@ export function SendToken() {
               </form>
               {successMessage && (
                 <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">
-                  {successMessage}
+                  <p>{successMessage}</p>
+                  {explorerUrl && (
+                    <a
+                      href={explorerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-indigo-600 hover:text-indigo-800 transition-colors"
+                    >
+                      View on Solana Explorer
+                    </a>
+                  )}
                 </div>
               )}
             </CardContent>
