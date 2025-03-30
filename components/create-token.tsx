@@ -1,47 +1,38 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useWallet, useConnection } from "@solana/wallet-adapter-react"
-import { PublicKey, Transaction, Keypair } from "@solana/web3.js"
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { Loader2 } from 'lucide-react'
-import { DynamicNavbar } from "@/components/navbar"
-import { WalletStatus } from "@/components/wallet-status"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+import { useState } from "react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey, Transaction, Keypair, SystemProgram } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { Loader2 } from "lucide-react";
+import { DynamicNavbar } from "@/components/navbar";
+import { WalletStatus } from "@/components/wallet-status";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
 import {
   getMinimumBalanceForRentExemptMint,
   createMint,
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
   createMintToInstruction,
-} from "@solana/spl-token"
-
-import { SystemProgram } from "@solana/web3.js";
-import { createInitializeMintInstruction } from "@solana/spl-token";
-
-interface TokenAccount {
-  pubkey: PublicKey
-  account: {
-    mint: PublicKey
-    owner: PublicKey
-    amount: bigint
-  }
-}
+  createInitializeMintInstruction,
+} from "@solana/spl-token";
 
 export function CreateToken() {
-  const { connection } = useConnection()
-  const { publicKey, sendTransaction, signTransaction } = useWallet()
-  const [name, setName] = useState("")
-  const [symbol, setSymbol] = useState("")
-  const [decimals, setDecimals] = useState("9")
-  const [initialSupply, setInitialSupply] = useState("1000000")
-  const [loading, setLoading] = useState(false)
-  const [mintAddress, setMintAddress] = useState<string | null>(null)
-  const { toast } = useToast()
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction, signTransaction } = useWallet();
+  const [name, setName] = useState("");
+  const [symbol, setSymbol] = useState("");
+  const [decimals, setDecimals] = useState("9");
+  const [initialSupply, setInitialSupply] = useState("1000000");
+  const [loading, setLoading] = useState(false);
+  const [mintAddress, setMintAddress] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [txSignature, setTxSignature] = useState("");
+  const { toast } = useToast();
 
   const handleCreateToken = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,10 +53,10 @@ export function CreateToken() {
       const mintKeypair = Keypair.generate();
       const mintPublicKey = mintKeypair.publicKey;
 
-      // Calculate the lamports required for rent exemption for a mint account
+      // Calculate lamports for rent exemption for a mint account
       const lamports = await getMinimumBalanceForRentExemptMint(connection);
 
-      // Create the mint account instruction
+      // Create mint account instruction
       const createAccountIx = SystemProgram.createAccount({
         fromPubkey: publicKey,
         newAccountPubkey: mintPublicKey,
@@ -74,7 +65,7 @@ export function CreateToken() {
         programId: TOKEN_PROGRAM_ID,
       });
 
-      // Initialize the mint account instruction
+      // Initialize mint account instruction
       const initMintIx = createInitializeMintInstruction(
         mintPublicKey,
         Number.parseInt(decimals),
@@ -82,10 +73,10 @@ export function CreateToken() {
         publicKey  // freeze authority (or null to disable)
       );
 
-      // Get the associated token account for the connected wallet and new mint
+      // Get associated token account for the connected wallet and new mint
       const associatedTokenAddress = await getAssociatedTokenAddress(mintPublicKey, publicKey);
 
-      // Create the associated token account instruction
+      // Create associated token account instruction
       const createATAIx = createAssociatedTokenAccountInstruction(
         publicKey,
         associatedTokenAddress,
@@ -128,10 +119,15 @@ export function CreateToken() {
       const mintStr = mintPublicKey.toString();
       setMintAddress(mintStr);
 
+      // Construct success message and explorer URL for Devnet
+      const explorerUrl = `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+      const message = `Your new token has been created with mint address: ${mintStr.slice(0, 10)}...`;
       toast({
         title: "Token created successfully!",
-        description: `Your new token has been created with mint address: ${mintStr.slice(0, 10)}...`,
+        description: message,
       });
+      setSuccessMessage(message);
+      setTxSignature(signature);
     } catch (error) {
       console.error("Error creating token:", error);
       toast({
@@ -149,9 +145,7 @@ export function CreateToken() {
       <DynamicNavbar />
       <main className="flex-1 container mx-auto px-4 py-8 mt-10">
         <h1 className="text-3xl font-bold mb-6 mt-10">Create New Token</h1>
-
         <WalletStatus />
-
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader>
@@ -170,7 +164,6 @@ export function CreateToken() {
                     required
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="symbol">Token Symbol</Label>
                   <Input
@@ -182,7 +175,6 @@ export function CreateToken() {
                     maxLength={10}
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="decimals">Decimals</Label>
                   <Input
@@ -199,7 +191,6 @@ export function CreateToken() {
                     Number of decimal places (0-9). Standard is 9 for most tokens.
                   </p>
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="initialSupply">Initial Supply</Label>
                   <Input
@@ -219,10 +210,10 @@ export function CreateToken() {
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    setName("")
-                    setSymbol("")
-                    setDecimals("9")
-                    setInitialSupply("1000000")
+                    setName("");
+                    setSymbol("");
+                    setDecimals("9");
+                    setInitialSupply("1000000");
                   }}
                 >
                   Reset
@@ -266,13 +257,26 @@ export function CreateToken() {
                     <code className="bg-background p-1 rounded">{mintAddress}</code>
                   </p>
                 </div>
+                {txSignature && (
+                  <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">
+                    <p>{successMessage}</p>
+                    <a
+                      href={`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-indigo-600 hover:text-indigo-800 transition-colors"
+                    >
+                      View on Solana Explorer
+                    </a>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
         </div>
       </main>
     </div>
-  )
+  );
 }
 
-export default CreateToken
+export default CreateToken;
