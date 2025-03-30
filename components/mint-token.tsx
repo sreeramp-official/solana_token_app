@@ -31,12 +31,16 @@ export function MintToken() {
     decimals: number;
     mintAuthority: string | null;
   } | null>(null);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [txSignature, setTxSignature] = useState("");
   const { toast } = useToast();
 
   // Reset mintInfo whenever a new token is selected
   const handleTokenSelect = (mint: string) => {
     setSelectedMint(mint);
-    setMintInfo(null); // Reset verified mint info so that verify button is active again.
+    setMintInfo(null);
+    setSuccessMessage("");
+    setTxSignature("");
   };
 
   const handleVerifyMint = async () => {
@@ -126,8 +130,7 @@ export function MintToken() {
       const mintPublicKey = new PublicKey(selectedMint);
 
       // Calculate mint amount based on decimals
-      const mintAmount =
-        BigInt(Number.parseFloat(amount) * 10 ** mintInfo.decimals);
+      const mintAmount = BigInt(Number.parseFloat(amount) * 10 ** mintInfo.decimals);
 
       // Get associated token account for the connected wallet
       const associatedTokenAddress = await getAssociatedTokenAddress(mintPublicKey, publicKey);
@@ -153,10 +156,15 @@ export function MintToken() {
       const signature = await sendTransaction(transaction, connection);
       await connection.confirmTransaction(signature, "confirmed");
 
+      // Build success message and explorer URL
+      const explorerUrl = `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+      const message = `${amount} tokens have been minted to your wallet.`;
       toast({
         title: "Tokens minted successfully!",
-        description: `${amount} tokens have been minted to your wallet.`,
+        description: message,
       });
+      setSuccessMessage(message);
+      setTxSignature(signature);
 
       // Reset the amount field
       setAmount("");
@@ -177,9 +185,7 @@ export function MintToken() {
       <DynamicNavbar />
       <main className="flex-1 container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">Mint Tokens</h1>
-
         <WalletStatus />
-
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader>
@@ -194,7 +200,6 @@ export function MintToken() {
                 <Label htmlFor="tokenSelect">Select Token</Label>
                 <TokenSelector onTokenSelect={handleTokenSelect} />
               </div>
-
               {mintInfo && (
                 <div className="p-4 bg-muted rounded-md">
                   <p className="text-sm mb-1">
@@ -205,7 +210,6 @@ export function MintToken() {
                   </p>
                 </div>
               )}
-
               {/* Verify Button */}
               <div className="space-y-2">
                 <Button
@@ -223,7 +227,6 @@ export function MintToken() {
                   )}
                 </Button>
               </div>
-
               {/* Mint Form */}
               <form onSubmit={handleMintToken}>
                 <div className="space-y-2">
@@ -245,7 +248,6 @@ export function MintToken() {
                     </p>
                   )}
                 </div>
-
                 <div className="mt-6">
                   <Button
                     type="submit"
@@ -269,6 +271,21 @@ export function MintToken() {
                   </Button>
                 </div>
               </form>
+              {successMessage && (
+                <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">
+                  <p>{successMessage}</p>
+                  {txSignature && (
+                    <a
+                      href={`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-indigo-600 hover:text-indigo-800 transition-colors"
+                    >
+                      View on Solana Explorer
+                    </a>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
