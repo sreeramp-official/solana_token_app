@@ -81,7 +81,6 @@ export function DynamicNavbar() {
                             History
                         </NavLink>
                         <div className="flex flex-col gap-2">
-                            <ModeToggle />
                             <WalletMultiButton className="!bg-indigo-600 hover:!bg-indigo-700" />
                         </div>
                     </div>
